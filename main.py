@@ -2,6 +2,9 @@ import json
 from flask import Flask, request, jsonify
 import pandas as pd
 import io
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import MultiLabelBinarizer
+from joblib import load
 
 app = Flask(__name__)
 
@@ -12,12 +15,79 @@ def process_json():
         json_data = request.get_json()
 
         # Convert json_data to a JSON-formatted string
-        json_data_string = json.dumps(json_data)
-        df = pd.read_json(io.StringIO(json_data_string[1:-1]), orient='records', lines=True)
+
 
         reports_wc, reports_cy, reports_ny = generate_individual_reports(df)
 
         return jsonify({"withered_reports": reports_wc, "crop_yield": reports_cy, "net_yield":  reports_ny})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+
+@app.route('/suggested-tags', methods=['POST'])
+def get_suggested_tags():
+    try:
+        json_data = request.get_json()
+        # Load the trained model
+        rf_classifier = load("./models/trained_model.joblib")
+
+        # Load the MultiLabelBinarizer instance
+        mlb = load("./models/mlb_model.joblib")
+
+        # Load new samples without tags
+
+        json_data_string = json.dumps(json_data)
+        new_samples = pd.read_json(io.StringIO(json_data_string[1:-1]), orient='records', lines=True)
+
+        # Preprocess the new samples (similar to training data preprocessing)
+        new_samples_features = new_samples[
+            [
+                "withered_crops",
+                "crop_yield",
+                "net_yield",
+                "type",
+            ]
+        ]
+
+        # Make predictions
+        new_samples_predictions = rf_classifier.predict(new_samples_features)
+
+        # Inverse transform predictions
+        predicted_tags_new_samples = mlb.inverse_transform(new_samples_predictions)
+
+        # Convert the list of tuples into a list of lists with removed spaces
+        suggested_tags = [[tag.strip() for tag in tags] for tags in predicted_tags_new_samples]
+
+        # Define the tags to check for in the suggested tags
+        tags_to_check = [
+            "commendable crop yield",
+            "good crop yield",
+            "average crop yield",
+            "needs improvement",
+            "terrible crop yield",
+            "average crop yield",
+            "commendable crop yield",
+            "needs crop improvement",
+            "terrible crop yield",
+            "excellent net yield",
+            "good net yield",
+            "bad net yield",
+            "good net yield",
+            "excellent net yield",
+            "bad net yield",
+        ]
+
+        desc_tags = []
+        # Iterate over each row in the DataFrame
+        for i, row in new_samples.iterrows():
+            for tag in tags_to_check:
+                if tag in suggested_tags[i]:
+                    desc_tags.append(tag)
+                    suggested_tags[i].remove(tag)
+            new_samples.at[i, "tags"] = ", ".join(suggested_tags[i])
+            new_samples.at[i, "desc"] = ", ".join(desc_tags)
+
+        return jsonify({"tags": suggested_tags})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
