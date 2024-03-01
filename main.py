@@ -139,9 +139,9 @@ def generate_individual_reports(dataframe):
     report_cy = []
     report_ny = []
 
-    terrible_wc = "The withered crops have significantly impacted yield. Immediate action is needed, withered crops have significantly impacted yield."
+    terrible_wc = "The withered crops have significantly impacted yield. Immediate action is needed"
     bad_wc = "The number of withered crops is concerning and impacting yield"
-    good_wc = "The withered crops count is zero, indicating excellent crop health and minimal losses during cultivation. This suggests effective pest control, optimal water management, and overall favorable growing conditions. Keep up the good work!"
+    good_wc = "The withered crops count is zero, indicating excellent crop health and minimal losses during cultivation. "
     mild_wc = "There are some losses due to withered crops, but they're manageable"
 
     excellent_cy = "Crop yield is exceptional!"
