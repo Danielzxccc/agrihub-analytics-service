@@ -8,6 +8,11 @@ from joblib import load
 import gc
 
 app = Flask(__name__)
+# Load the trained model
+rf_classifier = load("./models/trained_model.joblib")
+
+# Load the MultiLabelBinarizer instance
+mlb = load("./models/mlb_model.joblib")
 
 @app.route('/pre-defined', methods=['POST'])
 def process_json():
@@ -29,11 +34,6 @@ def process_json():
 def get_suggested_tags():
     try:
         json_data = request.get_json()
-        # Load the trained model
-        rf_classifier = load("./models/trained_model.joblib")
-
-        # Load the MultiLabelBinarizer instance
-        mlb = load("./models/mlb_model.joblib")
 
         # Load new samples without tags
 
