@@ -5,6 +5,7 @@ import io
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import MultiLabelBinarizer
 from joblib import load
+import gc
 
 app = Flask(__name__)
 
@@ -86,9 +87,10 @@ def get_suggested_tags():
                     suggested_tags[i].remove(tag)
             new_samples.at[i, "tags"] = ", ".join(suggested_tags[i])
             new_samples.at[i, "desc"] = ", ".join(desc_tags)
-
+        gc.collect()
         return jsonify({"tags": suggested_tags})
     except Exception as e:
+        gc.collect()
         return jsonify({"status": "error", "message": str(e)})
 
 
