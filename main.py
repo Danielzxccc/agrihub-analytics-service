@@ -18,13 +18,9 @@ mlb = load("./models/mlb_model.joblib")
 @app.route("/pre-defined", methods=["POST"])
 def process_json():
     try:
-
         json_data = request.get_json()
-
-        # Convert json_data to a JSON-formatted string
-
-        reports_wc, reports_cy, reports_ny = generate_individual_reports(df)
-
+        dataframe = pd.DataFrame(json_data)
+        reports_wc, reports_cy, reports_ny = generate_individual_reports(dataframe)
         return jsonify(
             {
                 "withered_reports": reports_wc,
