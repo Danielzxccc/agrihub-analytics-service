@@ -20,12 +20,15 @@ def process_json():
     try:
         json_data = request.get_json()
         dataframe = pd.DataFrame(json_data)
-        reports_wc, reports_cy, reports_ny = generate_individual_reports(dataframe)
+        reports_wc, reports_cy, reports_ny, report_plantName = (
+            generate_individual_reports(dataframe)
+        )
         return jsonify(
             {
                 "withered_reports": reports_wc,
                 "crop_yield": reports_cy,
                 "net_yield": reports_ny,
+                "plant": report_plantName,
             }
         )
     except Exception as e:
@@ -138,6 +141,7 @@ def generate_individual_reports(dataframe):
     report_wc = []
     report_cy = []
     report_ny = []
+    report_plantname = []
 
     terrible_wc = "The withered crops have significantly impacted yield. Immediate action is needed"
     bad_wc = "The number of withered crops is concerning and impacting yield"
@@ -155,8 +159,8 @@ def generate_individual_reports(dataframe):
     terrible_ny = "Net yield is negative, indicating significant losses"
 
     for index, row in dataframe.iterrows():
-        report = f"Report for {row['plant']} crop:\n"
-
+        report = f"Report for {['plant']} crop:\n"
+        report_plantname = row["plant"]
         # Analyze withered crops
         if row["type"] == 1:
             if row["withered_crops"] >= 5:
@@ -246,7 +250,7 @@ def generate_individual_reports(dataframe):
             report += f"net yield is negative, indicating significant losses\n"
             report_ny.append(terrible_ny)
 
-    return report_wc, report_cy, report_ny
+    return report_wc, report_cy, report_ny, report_plantname
 
 
 if __name__ == "__main__":
