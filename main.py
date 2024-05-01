@@ -9,10 +9,7 @@ import gc
 
 app = Flask(__name__)
 # Load the trained model
-rf_classifier = load("./models/trained_model.joblib")
-
-# Load the MultiLabelBinarizer instance
-mlb = load("./models/mlb_model.joblib")
+rf_classifier = load("./models/prescription_model.joblib")
 
 
 @app.route("/pre-defined", methods=["POST"])
@@ -35,63 +32,33 @@ def process_json():
         return jsonify({"status": "error", "message": str(e)})
 
 
-@app.route("/suggested-tags", methods=["POST"])
-def get_suggested_tags():
+@app.route("/predict-prescription", methods=["POST"])
+def predict_prescription():
     try:
-        json_data = request.get_json()
-        new_samples = pd.DataFrame(json_data)
+        # Get input data from the request
+        data = request.get_json()
 
-        # Preprocess the new samples (similar to training data preprocessing)
-        new_samples_features = new_samples[
-            [
-                "withered_crops",
-                "crop_yield",
-                "net_yield",
-                "type",
-            ]
-        ]
+        # Initialize an empty list to store predictions for each input instance
+        predictions = []
 
-        # Make predictions
-        new_samples_predictions = rf_classifier.predict(new_samples_features)
+        # Iterate over each input instance
+        for instance in data:
+            # Extract features from the input data
+            crop_yield = float(instance["crop_yield"])  # Ensure crop_yield is a float
+            withered_crops = float(
+                instance["withered_crops"]
+            )  # Ensure withered_crops is a float
 
-        # Inverse transform predictions
-        predicted_tags_new_samples = mlb.inverse_transform(new_samples_predictions)
+            # Make prediction based on the provided features
+            prediction = rf_classifier.predict([[withered_crops, crop_yield]])
 
-        # Convert the list of tuples into a list of lists with removed spaces
-        suggested_tags = [
-            [tag.strip() for tag in tags] for tags in predicted_tags_new_samples
-        ]
+            # Split the predicted prescription string based on "., "
+            prescription_steps = prediction[0].split("., ")
 
-        # Define the tags to check for in the suggested tags
-        tags_to_check = [
-            "commendable crop yield",
-            "good crop yield",
-            "average crop yield",
-            "needs improvement",
-            "terrible crop yield",
-            "average crop yield",
-            "commendable crop yield",
-            "needs crop improvement",
-            "terrible crop yield",
-            "excellent net yield",
-            "good net yield",
-            "bad net yield",
-            "good net yield",
-            "excellent net yield",
-            "bad net yield",
-        ]
+            # Append the list of prescription steps to the predictions list
+            predictions.append({"predicted_prescription": prescription_steps})
 
-        suggested_tags_with_desc = []
-        # Iterate over each row in the DataFrame
-        for i, row in new_samples.iterrows():
-            desc_tags = []
-            for tag in tags_to_check:
-                if tag in suggested_tags[i]:
-                    desc_tags.append(tag)
-                    suggested_tags[i].remove(tag)
-            suggested_tags_with_desc.append({"tags": suggested_tags[i]})
-
-        return jsonify({"suggested_tags": suggested_tags_with_desc})
+        return jsonify(predictions)
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
